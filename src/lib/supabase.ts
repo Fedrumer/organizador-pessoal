@@ -5,6 +5,9 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
 export const isSupabaseConfigured = Boolean(url && anonKey)
 
+/** Sem Supabase configurado o app roda em modo local: dados no dispositivo, sem login. */
+export const modoLocal = !isSupabaseConfigured
+
 export const supabase = createClient(
   url ?? 'https://nao-configurado.supabase.co',
   anonKey ?? 'nao-configurado',

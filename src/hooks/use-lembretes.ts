@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { addHours } from 'date-fns'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
+import { modoLocal, supabase } from '@/lib/supabase'
+import { localDb } from '@/lib/local-db'
 import { useAuth } from '@/contexts/auth-context'
 import type { Evento } from '@/types'
 import { formatarHorario } from '@/lib/datas'
@@ -18,15 +19,25 @@ export function useLembretes() {
   const verificar = useCallback(async () => {
     if (!user) return
     const agora = new Date()
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .gte('starts_at', agora.toISOString())
-      .lte('starts_at', addHours(agora, 24).toISOString())
-      .order('starts_at', { ascending: true })
-    if (error || !data) return
+    const inicioIso = agora.toISOString()
+    const fimIso = addHours(agora, 24).toISOString()
 
-    const eventos = data as Evento[]
+    let eventos: Evento[]
+    if (modoLocal) {
+      eventos = localDb
+        .listar<Evento>('events')
+        .filter((e) => e.starts_at >= inicioIso && e.starts_at <= fimIso)
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+    } else {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .gte('starts_at', inicioIso)
+        .lte('starts_at', fimIso)
+        .order('starts_at', { ascending: true })
+      if (error || !data) return
+      eventos = data as Evento[]
+    }
     setProximos(eventos)
 
     const disparar = eventos.filter((e) => {
@@ -41,10 +52,14 @@ export function useLembretes() {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(`Lembrete: ${evento.title}`, { body: horario })
       }
-      await supabase
-        .from('events')
-        .update({ reminded_at: new Date().toISOString() })
-        .eq('id', evento.id)
+      if (modoLocal) {
+        localDb.atualizar('events', evento.id, { reminded_at: new Date().toISOString() })
+      } else {
+        await supabase
+          .from('events')
+          .update({ reminded_at: new Date().toISOString() })
+          .eq('id', evento.id)
+      }
     }
   }, [user])
 

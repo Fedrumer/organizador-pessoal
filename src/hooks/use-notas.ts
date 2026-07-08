@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { modoLocal, supabase } from '@/lib/supabase'
+import { localDb } from '@/lib/local-db'
 import { useAuth } from '@/contexts/auth-context'
 import type { Nota } from '@/types'
 
@@ -17,6 +18,17 @@ export function useNotas() {
 
   const carregar = useCallback(async () => {
     if (!user) return
+    if (modoLocal) {
+      const todas = localDb
+        .listar<Nota>('notes')
+        .sort(
+          (a, b) =>
+            Number(b.pinned) - Number(a.pinned) || b.updated_at.localeCompare(a.updated_at),
+        )
+      setNotas(todas)
+      setLoading(false)
+      return
+    }
     const { data, error } = await supabase
       .from('notes')
       .select('*')
@@ -33,6 +45,11 @@ export function useNotas() {
   const criar = useCallback(
     async (input: NotaInput) => {
       if (!user) return { error: 'Não autenticado' }
+      if (modoLocal) {
+        localDb.inserir('notes', { ...input, user_id: user.id })
+        await carregar()
+        return { error: null }
+      }
       const { error } = await supabase.from('notes').insert({ ...input, user_id: user.id })
       if (!error) await carregar()
       return { error: error?.message ?? null }
@@ -42,10 +59,13 @@ export function useNotas() {
 
   const atualizar = useCallback(
     async (id: string, input: Partial<NotaInput>) => {
-      const { error } = await supabase
-        .from('notes')
-        .update({ ...input, updated_at: new Date().toISOString() })
-        .eq('id', id)
+      const patch = { ...input, updated_at: new Date().toISOString() }
+      if (modoLocal) {
+        localDb.atualizar('notes', id, patch)
+        await carregar()
+        return { error: null }
+      }
+      const { error } = await supabase.from('notes').update(patch).eq('id', id)
       if (!error) await carregar()
       return { error: error?.message ?? null }
     },
@@ -54,6 +74,11 @@ export function useNotas() {
 
   const excluir = useCallback(
     async (id: string) => {
+      if (modoLocal) {
+        localDb.excluir('notes', id)
+        await carregar()
+        return { error: null }
+      }
       const { error } = await supabase.from('notes').delete().eq('id', id)
       if (!error) await carregar()
       return { error: error?.message ?? null }

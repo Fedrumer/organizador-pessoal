@@ -8,7 +8,10 @@ Organizador **pessoal e profissional** com visual escuro e elegante:
 - 🔔 **Alertas** — lembretes configuráveis (5 min a 1 dia antes) e sino com as próximas 24h
 - 🌙 **Tema** — escuro sofisticado por padrão, com modo claro opcional
 
-Os dados ficam na nuvem ([Supabase](https://supabase.com)) protegidos por login — cada pessoa só enxerga os próprios dados (RLS).
+Funciona em dois modos, automaticamente:
+
+- **Modo local (padrão)** — sem configurar nada, os dados ficam salvos no próprio navegador do dispositivo.
+- **Modo nuvem** — configurando o [Supabase](https://supabase.com) (variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`), o app passa a ter login por e-mail/senha e sincronização entre dispositivos, com cada pessoa enxergando só os próprios dados (RLS).
 
 ## Stack
 

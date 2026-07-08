@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { CalendarDays, LayoutDashboard, StickyNote, Wallet, LogOut, Sparkles } from 'lucide-react'
+import { CalendarDays, LayoutDashboard, StickyNote, Wallet, LogOut, Smartphone, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { modoLocal } from '@/lib/supabase'
 import { useAuth, nomeExibicao } from '@/contexts/auth-context'
 import { useLembretes } from '@/hooks/use-lembretes'
 import { ThemeToggle } from './ThemeToggle'
@@ -94,16 +95,30 @@ export default function AppShell() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="font-normal">
-                <p className="text-sm font-medium">{nomeExibicao(user)}</p>
-                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut()}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-60">
+              {modoLocal ? (
+                <DropdownMenuLabel className="font-normal">
+                  <p className="flex items-center gap-1.5 text-sm font-medium">
+                    <Smartphone className="h-3.5 w-3.5" />
+                    Modo local
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Seus dados ficam salvos somente neste dispositivo/navegador.
+                  </p>
+                </DropdownMenuLabel>
+              ) : (
+                <>
+                  <DropdownMenuLabel className="font-normal">
+                    <p className="text-sm font-medium">{nomeExibicao(user)}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

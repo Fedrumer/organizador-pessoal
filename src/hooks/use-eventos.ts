@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { modoLocal, supabase } from '@/lib/supabase'
+import { localDb } from '@/lib/local-db'
 import { useAuth } from '@/contexts/auth-context'
 import type { Evento } from '@/types'
 
@@ -23,11 +24,22 @@ export function useEventos(rangeStart: Date, rangeEnd: Date) {
 
   const carregar = useCallback(async () => {
     if (!user) return
+    const inicioIso = new Date(inicioMs).toISOString()
+    const fimIso = new Date(fimMs).toISOString()
+    if (modoLocal) {
+      const todos = localDb
+        .listar<Evento>('events')
+        .filter((e) => e.starts_at >= inicioIso && e.starts_at <= fimIso)
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+      setEventos(todos)
+      setLoading(false)
+      return
+    }
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .gte('starts_at', new Date(inicioMs).toISOString())
-      .lte('starts_at', new Date(fimMs).toISOString())
+      .gte('starts_at', inicioIso)
+      .lte('starts_at', fimIso)
       .order('starts_at', { ascending: true })
     if (!error) setEventos((data as Evento[]) ?? [])
     setLoading(false)
@@ -41,6 +53,11 @@ export function useEventos(rangeStart: Date, rangeEnd: Date) {
   const criar = useCallback(
     async (input: EventoInput) => {
       if (!user) return { error: 'Não autenticado' }
+      if (modoLocal) {
+        localDb.inserir('events', { ...input, user_id: user.id })
+        await carregar()
+        return { error: null }
+      }
       const { error } = await supabase.from('events').insert({ ...input, user_id: user.id })
       if (!error) await carregar()
       return { error: error?.message ?? null }
@@ -55,6 +72,11 @@ export function useEventos(rangeStart: Date, rangeEnd: Date) {
         'starts_at' in input || 'reminder_minutes' in input
           ? { ...input, reminded_at: null }
           : input
+      if (modoLocal) {
+        localDb.atualizar('events', id, patch)
+        await carregar()
+        return { error: null }
+      }
       const { error } = await supabase.from('events').update(patch).eq('id', id)
       if (!error) await carregar()
       return { error: error?.message ?? null }
@@ -64,6 +86,11 @@ export function useEventos(rangeStart: Date, rangeEnd: Date) {
 
   const excluir = useCallback(
     async (id: string) => {
+      if (modoLocal) {
+        localDb.excluir('events', id)
+        await carregar()
+        return { error: null }
+      }
       const { error } = await supabase.from('events').delete().eq('id', id)
       if (!error) await carregar()
       return { error: error?.message ?? null }

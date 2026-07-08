@@ -5,11 +5,12 @@ import { ptBR } from 'date-fns/locale'
 import { ArrowRight, CalendarDays, Pin, Plus, StickyNote, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { supabase } from '@/lib/supabase'
+import { modoLocal, supabase } from '@/lib/supabase'
+import { localDb } from '@/lib/local-db'
 import { useAuth, nomeExibicao } from '@/contexts/auth-context'
 import { ContextBadge } from '@/components/ContextBadge'
 import { formatarHorario } from '@/lib/datas'
-import { formatarMoeda, type Evento, type Nota } from '@/types'
+import { formatarMoeda, type Evento, type Gasto, type Nota } from '@/types'
 
 function saudacao(): string {
   const hora = new Date().getHours()
@@ -27,6 +28,34 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return
     const agora = new Date()
+
+    if (modoLocal) {
+      const inicioIso = agora.toISOString()
+      const fimIso = addDays(agora, 7).toISOString()
+      setEventos(
+        localDb
+          .listar<Evento>('events')
+          .filter((e) => e.starts_at >= inicioIso && e.starts_at <= fimIso)
+          .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+          .slice(0, 5),
+      )
+      setNotasFixadas(
+        localDb
+          .listar<Nota>('notes')
+          .filter((n) => n.pinned)
+          .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+          .slice(0, 4),
+      )
+      const inicioMes = format(startOfMonth(agora), 'yyyy-MM-dd')
+      const fimMes = format(endOfMonth(agora), 'yyyy-MM-dd')
+      setTotalMes(
+        localDb
+          .listar<Gasto>('expenses')
+          .filter((g) => g.date >= inicioMes && g.date <= fimMes)
+          .reduce((soma, g) => soma + Number(g.amount), 0),
+      )
+      return
+    }
 
     supabase
       .from('events')
@@ -60,13 +89,15 @@ export default function Dashboard() {
   }, [user])
 
   const hoje = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })
+  const nome = nomeExibicao(user)
 
   return (
     <div className="mx-auto max-w-6xl animate-fade-in-up">
       <div className="mb-8">
         <p className="text-sm capitalize text-muted-foreground">{hoje}</p>
         <h1 className="mt-1 text-3xl font-semibold">
-          {saudacao()}, {nomeExibicao(user)} <span aria-hidden>👋</span>
+          {saudacao()}
+          {nome ? `, ${nome}` : '!'} <span aria-hidden>👋</span>
         </h1>
       </div>
 

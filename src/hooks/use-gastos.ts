@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
-import { supabase } from '@/lib/supabase'
+import { modoLocal, supabase } from '@/lib/supabase'
+import { localDb } from '@/lib/local-db'
 import { useAuth } from '@/contexts/auth-context'
 import { CATEGORIAS_PADRAO, type Categoria, type Gasto } from '@/types'
 
@@ -29,6 +30,19 @@ export function useGastos(mesReferencia: Date) {
 
   const carregarCategorias = useCallback(async () => {
     if (!user) return
+    if (modoLocal) {
+      let lista = localDb.listar<Categoria>('expense_categories')
+      if (lista.length === 0 && !seeded.current) {
+        seeded.current = true
+        localDb.inserir(
+          'expense_categories',
+          CATEGORIAS_PADRAO.map((c) => ({ ...c, user_id: user.id })),
+        )
+        lista = localDb.listar<Categoria>('expense_categories')
+      }
+      setCategorias([...lista].sort((a, b) => a.name.localeCompare(b.name)))
+      return
+    }
     const { data, error } = await supabase.from('expense_categories').select('*').order('name')
     if (error) return
     let lista = (data as Categoria[]) ?? []
@@ -45,6 +59,15 @@ export function useGastos(mesReferencia: Date) {
 
   const carregarGastos = useCallback(async () => {
     if (!user) return
+    if (modoLocal) {
+      const lista = localDb
+        .listar<Gasto>('expenses')
+        .filter((g) => g.date >= inicioJanela && g.date <= fimJanela)
+        .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
+      setGastos(lista)
+      setLoading(false)
+      return
+    }
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
@@ -68,6 +91,11 @@ export function useGastos(mesReferencia: Date) {
   const criar = useCallback(
     async (input: GastoInput) => {
       if (!user) return { error: 'Não autenticado' }
+      if (modoLocal) {
+        localDb.inserir('expenses', { ...input, user_id: user.id })
+        await carregarGastos()
+        return { error: null }
+      }
       const { error } = await supabase.from('expenses').insert({ ...input, user_id: user.id })
       if (!error) await carregarGastos()
       return { error: error?.message ?? null }
@@ -77,6 +105,11 @@ export function useGastos(mesReferencia: Date) {
 
   const atualizar = useCallback(
     async (id: string, input: Partial<GastoInput>) => {
+      if (modoLocal) {
+        localDb.atualizar('expenses', id, input)
+        await carregarGastos()
+        return { error: null }
+      }
       const { error } = await supabase.from('expenses').update(input).eq('id', id)
       if (!error) await carregarGastos()
       return { error: error?.message ?? null }
@@ -86,6 +119,11 @@ export function useGastos(mesReferencia: Date) {
 
   const excluir = useCallback(
     async (id: string) => {
+      if (modoLocal) {
+        localDb.excluir('expenses', id)
+        await carregarGastos()
+        return { error: null }
+      }
       const { error } = await supabase.from('expenses').delete().eq('id', id)
       if (!error) await carregarGastos()
       return { error: error?.message ?? null }
