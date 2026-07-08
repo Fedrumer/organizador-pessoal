@@ -1,0 +1,136 @@
+/* Estilos globais — tema, fontes, utilidades */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Modo claro — quente e minimalista */
+    --background: 40 30% 97%;
+    --foreground: 228 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 228 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 20% 10%;
+
+    --primary: 36 90% 38%;
+    --primary-foreground: 40 30% 98%;
+
+    --secondary: 40 20% 92%;
+    --secondary-foreground: 228 20% 14%;
+
+    --muted: 40 18% 92%;
+    --muted-foreground: 228 10% 42%;
+
+    --accent: 38 80% 92%;
+    --accent-foreground: 30 70% 25%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 14% 86%;
+    --input: 40 14% 84%;
+    --ring: 36 90% 38%;
+
+    --radius: 0.75rem;
+
+    /* Paleta categórica validada (superfície clara) */
+    --chart-1: 213 68% 50%;
+    --chart-2: 158 73% 40%;
+    --chart-3: 41 100% 46%;
+    --chart-4: 120 100% 26%;
+    --chart-5: 249 48% 44%;
+    --chart-6: 0 73% 59%;
+    --chart-7: 338 70% 70%;
+    --chart-8: 17 82% 56%;
+  }
+
+  .dark {
+    /* Modo escuro — premium, fundo profundo com acento dourado */
+    --background: 228 28% 6%;
+    --foreground: 40 25% 94%;
+
+    --card: 227 22% 9%;
+    --card-foreground: 40 25% 94%;
+
+    --popover: 227 24% 8%;
+    --popover-foreground: 40 25% 94%;
+
+    --primary: 42 88% 60%;
+    --primary-foreground: 228 28% 8%;
+
+    --secondary: 227 16% 14%;
+    --secondary-foreground: 40 25% 92%;
+
+    --muted: 227 16% 14%;
+    --muted-foreground: 228 10% 62%;
+
+    --accent: 42 40% 15%;
+    --accent-foreground: 42 88% 70%;
+
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 227 15% 16%;
+    --input: 227 15% 18%;
+    --ring: 42 88% 60%;
+
+    /* Paleta categórica validada (superfície escura) */
+    --chart-1: 213 77% 56%;
+    --chart-2: 159 73% 36%;
+    --chart-3: 40 100% 39%;
+    --chart-4: 120 100% 26%;
+    --chart-5: 247 69% 72%;
+    --chart-6: 0 72% 65%;
+    --chart-7: 338 61% 58%;
+    --chart-8: 17 70% 50%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  @keyframes fade-in-up {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out;
+  }
+
+  /* Scrollbar discreta */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 8px;
+    border: 2px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
